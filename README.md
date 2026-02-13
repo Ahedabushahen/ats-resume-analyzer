@@ -9,18 +9,7 @@ AI-powered resume analyzer that **simulates ATS screening** by comparing a resum
 [🌐 Live Demo](https://ai-ats-resume-analyzer-by-shahen-tech.streamlit.app) •
 [💻 GitHub Repo](https://github.com/Ahedabushahen/AI-ATS-Resume-Analyzer)
 
-</div>
 
----
-
-<div align="center">
-
-![Python](https://img.shields.io/badge/Python-3.x-blue)
-![Streamlit](https://img.shields.io/badge/Streamlit-App-red)
-![Gemini](https://img.shields.io/badge/Google-Gemini-black)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-</div>
 
 ---
 
@@ -37,19 +26,19 @@ AI-powered resume analyzer that **simulates ATS screening** by comparing a resum
 
 ## 🖼️ Demo
 
-> Add screenshots to `assets/` and update paths below.
+
 
 <div align="center">
 
 **Home**
 <br/>
-<img src="assets/demo-home.png" width="800" />
+<img src="assets/home.jpg" width="800" />
 
 <br/><br/>
 
 **Results**
 <br/>
-<img src="assets/demo-result.png" width="800" />
+<img src="assets/demo-result.jpg" width="800" />
 
 </div>
 
