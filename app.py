@@ -1,39 +1,38 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-import base64
-import streamlit as st
 import os
 import io
-from PIL import Image
-import pdf2image
-
-# ✅ New Gemini SDK (replace deprecated google-generativeai)
+import streamlit as st
 from google import genai
 from google.genai import types
 
+# --- Optional local .env support (won't crash if dotenv isn't installed on cloud) ---
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+
 # ----------------------------
-# Config
+# Config (Secrets first, then env)
 # ----------------------------
-API_KEY = os.getenv("GOOGLE_API_KEY")
+API_KEY = None
+if hasattr(st, "secrets"):
+    API_KEY = st.secrets.get("GOOGLE_API_KEY", None)
+
 if not API_KEY:
-    raise ValueError("Missing GOOGLE_API_KEY. Put it in a .env file: GOOGLE_API_KEY=xxxx")
+    API_KEY = os.getenv("GOOGLE_API_KEY")
+
+if not API_KEY:
+    st.error("Missing GOOGLE_API_KEY. Add it in Streamlit Secrets or .env locally.")
+    st.stop()
 
 client = genai.Client(api_key=API_KEY)
-
-# ✅ Your Poppler path (Windows)
-POPPLER_PATH = r"C:\Program Files (x86)\Release-25.12.0-0\poppler-25.12.0\Library\bin"
 
 
 # ----------------------------
 # Gemini Helpers
 # ----------------------------
-def get_gemini_response(prompt, pdf_parts, job_description):
-    """
-    prompt: instructions (HR / ATS prompt)
-    pdf_parts: list[types.Part] with the resume image
-    job_description: text area content
-    """
+def get_gemini_response(prompt: str, pdf_parts: list, job_description: str) -> str:
     resp = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=[prompt, pdf_parts[0], job_description],
@@ -42,25 +41,25 @@ def get_gemini_response(prompt, pdf_parts, job_description):
 
 
 def input_pdf_setup(uploaded_file):
+    """
+    Cloud-safe PDF -> image conversion using PyMuPDF (no Poppler needed).
+    """
     if uploaded_file is None:
         raise FileNotFoundError("No file uploaded")
 
-    # Convert the PDF -> images (requires Poppler on Windows)
-    images = pdf2image.convert_from_bytes(
-        uploaded_file.read(),
-        poppler_path=POPPLER_PATH
-    )
+    import fitz  # PyMuPDF
 
-    first_page = images[0]
+    pdf_bytes = uploaded_file.read()
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-    # Convert image to bytes
-    buf = io.BytesIO()
-    first_page.save(buf, format="JPEG")
-    image_bytes = buf.getvalue()
+    if doc.page_count == 0:
+        raise ValueError("Empty PDF")
 
-    # Create Gemini Part from bytes (image input)
-    pdf_parts = [types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg")]
-    return pdf_parts
+    page = doc.load_page(0)
+    pix = page.get_pixmap(dpi=200)  # higher DPI helps quality
+    img_bytes = pix.tobytes("jpeg")
+
+    return [types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg")]
 
 
 # ----------------------------
@@ -73,7 +72,7 @@ job_description = st.text_area("Job Description: ", key="input")
 uploaded_file = st.file_uploader("Upload your resume (PDF)...", type=["pdf"])
 
 if uploaded_file is not None:
-    st.write("PDF Uploaded Successfully")
+    st.success("PDF Uploaded Successfully")
 
 submit1 = st.button("Tell Me About the Resume")
 submit3 = st.button("Percentage match")
@@ -85,7 +84,7 @@ Highlight the strengths and weaknesses of the applicant in relation to the speci
 """
 
 input_prompt3 = """
-You are a skilled ATS (Applicant Tracking System) scanner with a deep understanding of data science and ATS functionality.
+You are a skilled ATS (Applicant Tracking System) scanner with a deep understanding of ATS functionality.
 Evaluate the resume against the provided job description.
 Give the percentage match first, then missing keywords, and last final thoughts.
 """
@@ -97,7 +96,7 @@ if submit1:
         st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please upload the resume")
+        st.warning("Please upload the resume")
 
 elif submit3:
     if uploaded_file is not None:
@@ -106,4 +105,4 @@ elif submit3:
         st.subheader("The Response is")
         st.write(response)
     else:
-        st.write("Please upload the resume")
+        st.warning("Please upload the resume")
