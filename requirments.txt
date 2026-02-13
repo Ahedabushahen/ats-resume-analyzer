@@ -3,3 +3,4 @@ google-genai
 python-dotenv
 pdf2image
 pillow
+pymupdf
