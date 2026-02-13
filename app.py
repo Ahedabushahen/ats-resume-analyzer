@@ -4,7 +4,6 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# --- Optional local .env support (won't crash if dotenv isn't installed on cloud) ---
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -18,7 +17,6 @@ except Exception:
 
 API_KEY = None
 
-# ✅ Safe: won't crash if no secrets.toml exists locally
 try:
     API_KEY = st.secrets.get("GOOGLE_API_KEY")
 except Exception:
